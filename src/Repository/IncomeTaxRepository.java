@@ -1,6 +1,8 @@
 package Repository;
 
-import DataAccess.IncomeTaxDAO;
+import DataAcess.IncomeTaxDAO;
+
+
 
 public class IncomeTaxRepository implements IIncomeTaxRepository {
 

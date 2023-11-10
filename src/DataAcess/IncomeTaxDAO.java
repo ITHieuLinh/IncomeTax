@@ -1,4 +1,6 @@
-package DataAccess;
+
+package DataAcess;
+
 
 import common.Library;
 import java.util.ArrayList;
@@ -8,8 +10,8 @@ import model.Children;
 import model.Parent;
 import model.WorkingPerson;
 
-public class IncomeTaxDAO {
 
+public class IncomeTaxDAO {
     private static IncomeTaxDAO instance = null;
     Library l;
 
@@ -27,62 +29,72 @@ public class IncomeTaxDAO {
         }
         return instance;
     }
-
+    
     public void addFamily() {
-        System.out.println("=========== FAMILIA TAX ===========");
+        System.out.println("\n=========== Family Tax ===========");
         ArrayList<WorkingPerson> family = new ArrayList<>();
         while (true) {
-            ArrayList<Parent> list = addParent();
+            ArrayList<Parent> ParentList = addParent();
+            int i = 1;
             while (true) {
-                System.out.println("---------- Input income ----------");
-                double income = l.checkInputDouble("Input Income: ");
+                double income = addIncome(i);
+                i++;
                 ArrayList<Children> listChildren = addChildren();
                 WorkingPerson wp = new WorkingPerson(income, listChildren);
                 family.add(wp);
                 System.out.println("---------- Input income ----------");
-                if (!l.checkInputYN("Do you want to continue input Income(Y/N): ")) {
-                    HashMap<Integer, ArrayList<Double>> listTax = calculateTaxableIncome(family, list);
-                    printTaxDetails(listTax);
+                if (!l.checkInputYN("\nDo you want to continue input Income for another person in your family(Y/N): ")) {
+                    HashMap<Integer, ArrayList<Double>> taxList = calculateTaxableIncome(family, ParentList);
+                    printTaxDetails(taxList);
                     return;
-                }
+                } 
             }
-
         }
-
     }
-
+    public double addIncome(int i){
+        System.out.println("\n---------- Input income ----------");
+        int incomeNum = l.getIntNoLimit("Enter number of income source of Person " + i + ": " );
+        double income = 0;
+        int count = 1;
+        while(count <= incomeNum){
+            income += l.checkInputDouble("Input the " + count + "th Income of Person " + i + ": ");  
+            count++;
+        }
+        return income;
+    }
+    
     public ArrayList<Parent> addParent() {
         System.out.println("---------- Input parents ----------");
-        ArrayList<Parent> list = new ArrayList<>();
+        ArrayList<Parent> ParentList = new ArrayList<>();
         boolean choice = l.checkInputYN("Do you want to input parent(Y/N)?: ");
         int count = 1;
         if (choice) {
             while (true) {
-                int gender = l.getInt("Father(1) - Mother(2)?: ", 1, 2);
-                while (!checkParent(gender, list)) {
-                    gender = l.getInt("Father(1) - Mother(2)?: ", 1, 2);
+                int gender = l.getInt("Father(1) - Mother(2)?", 1, 2);
+                while (!checkParent(gender, ParentList)) {
+                    gender = l.getInt("Father(1) - Mother(2)?", 1, 2);
                 }
                 int age = l.getIntNoLimit("Input age: ");
                 Parent parent = new Parent(gender, age);
-                list.add(parent);
+                ParentList.add(parent);
                 if (count == 2) {
-                    return list;
+                    return ParentList;
                 }
-                if (!l.checkInputYN("Do you want to continue input parent(Y/N): ")) {
-                    return list;
+                if (!l.checkInputYN("\nDo you want to continue input parent(Y/N): ")) {
+                    return ParentList;
                 }
                 count++;
             }
         } else {
-            return list;
+            return ParentList;
         }
     }
 
-    public boolean checkParent(int gender, ArrayList<Parent> list) {
-        if (list.isEmpty()) {
+    public boolean checkParent(int gender, ArrayList<Parent> parentList) {
+        if (parentList.isEmpty()) {
             return true;
         }
-        for (Parent x : list) {
+        for (Parent x : parentList) {
             if (gender == x.getGender()) {
                 String genderString = null;
                 switch (gender) {
@@ -93,7 +105,7 @@ public class IncomeTaxDAO {
                         genderString = "Mother";
                         break;
                 }
-                System.out.println("You already input " + genderString);
+                System.out.println("You already input " + genderString + "!!!");
                 return false;
             }
         }
@@ -101,30 +113,29 @@ public class IncomeTaxDAO {
     }
 
     public ArrayList<Children> addChildren() {
-        System.out.println("---------- Input children ----------");
-        ArrayList<Children> list = new ArrayList<>();
+        System.out.println("\n---------- Input children ----------");
+        ArrayList<Children> childrenList = new ArrayList<>();
         int status;
         boolean choice = l.checkInputYN("Do you want to input children(Y/N)?: ");
         if (choice) {
             while (true) {
                 int age = l.getIntNoLimit("Input age: ");
                 if (age > 18 && age <= 22) {
-                    status = l.getInt("Study(1) - Working(2)?: ", 1, 2);
+                    status = l.getInt("Study(1) - Working(2)?", 1, 2);
                 } else if (age > 22) {
                     status = 2;
                 } else {
                     status = 1;
                 }
                 Children child = new Children(status, age);
-                list.add(child);
-                if (!l.checkInputYN("Do you want to continue input children(Y/N): ")) {
-                    return list;
+                childrenList.add(child);
+                if (!l.checkInputYN("\nDo you want to continue input children(Y/N): ")) {
+                    return childrenList;
                 }
             }
         } else {
-            return list;
+            return childrenList;
         }
-
     }
 
     public HashMap<Integer, ArrayList<Double>> calculateTaxableIncome(ArrayList<WorkingPerson> family, ArrayList<Parent> listParent) {
@@ -133,19 +144,20 @@ public class IncomeTaxDAO {
         double deductionParent = (double) calculatorParent(listParent) / personCount;
         int count = 1;
         for (WorkingPerson x : family) {
-            ArrayList<Double> listArr = new ArrayList<>();
+            ArrayList<Double> workingPersonInfoList = new ArrayList<>();
             double calculatorChildren = calculatorChildren(x.getDependents());
             double taxIncome = x.getTotalIncome() - 11000000 - calculatorChildren;
             if (x.getTotalIncome() > 4000000) {
                 taxIncome -= deductionParent;
             }
             taxIncome = calculatorTax(taxIncome);
-            listArr.add(x.getTotalIncome());
-            listArr.add(11000000.0);
-            listArr.add(calculatorChildren);
-            listArr.add(deductionParent);
-            listArr.add(taxIncome);
-            listTax.put(count, listArr);
+            workingPersonInfoList.add(x.getTotalIncome());
+            workingPersonInfoList.add(11000000.0);
+            workingPersonInfoList.add(calculatorChildren);
+            workingPersonInfoList.add(deductionParent);
+            workingPersonInfoList.add(taxIncome);
+
+            listTax.put(count, workingPersonInfoList);
             count++;
         }
         return listTax;
@@ -154,8 +166,7 @@ public class IncomeTaxDAO {
     public double calculatorTax(double taxIncome) {
         if (taxIncome <= 0) {
             return 0;
-        }
-        if (taxIncome < 4000000) {
+        } else if (taxIncome < 4000000) {
             return (double) taxIncome * 5 / 100;
         } else if (taxIncome >= 4000000 && taxIncome <= 6000000) {
             return (double) taxIncome * 8 / 100;
@@ -177,52 +188,53 @@ public class IncomeTaxDAO {
         return sum;
     }
 
-    public int calculatorChildren(ArrayList<Children> list) {
-        if (list.isEmpty()) {
+    public int calculatorChildren(ArrayList<Children> ChildrenList) {
+        if (ChildrenList.isEmpty()) {
             return 0;
         }
         int total = 0;
-        int size = list.size();
+        int size = ChildrenList.size();
         if (size > 2) {
-            total += get2GreatChildren(list);
+            total += get2GreatChildren(ChildrenList);
         } else if (size <= 2) {
-            for (Children c : list) {
+            for (Children c : ChildrenList) {
                 total += c.getDeductionAmount();
             }
         }
         return total;
     }
 
-    public int get2GreatChildren(ArrayList<Children> list) {
-        int firstMax = list.get(0).getDeductionAmount();
-        int secondMax = list.get(1).getDeductionAmount();
+    public int get2GreatChildren(ArrayList<Children> ChildrenList) {
+        int firstMax = ChildrenList.get(0).getDeductionAmount();
+        int secondMax = ChildrenList.get(1).getDeductionAmount();
 
-        for (int i = 1; i < list.size(); i++) {
-            if (list.get(i).getDeductionAmount() > firstMax) {
+        for (int i = 1; i < ChildrenList.size(); i++) {
+            if (ChildrenList.get(i).getDeductionAmount() > firstMax) {
                 secondMax = firstMax;
-                firstMax = list.get(i).getDeductionAmount();
-            } else if (list.get(i).getDeductionAmount() > secondMax && list.get(i).getDeductionAmount() <= firstMax) {
-                secondMax = list.get(i).getDeductionAmount();
+                firstMax = ChildrenList.get(i).getDeductionAmount();
+            } else if (ChildrenList.get(i).getDeductionAmount() > secondMax && ChildrenList.get(i).getDeductionAmount() <= firstMax) {
+                secondMax = ChildrenList.get(i).getDeductionAmount();
             }
         }
         return firstMax + secondMax;
     }
 
-    public void printTaxDetails(HashMap<Integer, ArrayList<Double>> list) {
-        System.out.printf("%-15s%-25s%-25s%-25s%-25s%-25s\n", " ", "Income", "Deduction for self", "Children", "Parents", "Tax");
-        for (int i = 1; i <= list.size(); i++) {
-            ArrayList<Double> arrlist = list.get(i);
-            double value = arrlist.get(0);
-            long int1 = (long) value;
-            value = arrlist.get(1);
-            long int2 = (long) value;
-            value = arrlist.get(2);
-            long int3 = (long) value;
-            value = arrlist.get(3);
-            long int4 = (long) value;
-            value = arrlist.get(4);
-            long int5 = (long) value;
-            System.out.printf("%-15s%-25s%-25s%-25s%-25s%-25s\n", "Person " + i + ":", int1, int2, int3, int4, int5);
+    public void printTaxDetails(HashMap<Integer, ArrayList<Double>> TaxList) {
+        System.out.printf("%-15s%-25s%-25s%-25s%-25s%-25s\n", " ", "Total Income", "Deduction for self", "Deduction for children", "Deduction for parents", "Tax");
+        for (int i = 1; i <= TaxList.size(); i++) {
+            ArrayList<Double> arrList = TaxList.get(i);
+            double value = arrList.get(0);
+            long totalIncome = (long) value;
+            value = arrList.get(1);
+            long deductionForSelf = (long) value;
+            value = arrList.get(2);
+            long deductionForChildren = (long) value;
+            value = arrList.get(3);
+            long deductionForParent  = (long) value;
+            value = arrList.get(4);
+            long tax = (long) value;
+            System.out.printf("%-15s%-25s%-25s%-25s%-25s%-25s\n", "Person " + i + ":", totalIncome, deductionForSelf, deductionForChildren, deductionForParent, tax);
         }
     }
+    
 }
